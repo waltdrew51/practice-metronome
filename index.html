@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c0e12">
+  <meta name="color-scheme" content="dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Metronome">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="description" content="A large-type practice metronome for piano. Patterns, accents, and presets. Works offline.">
+  <title>Metronome</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" sizes="180x180">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="is-booting">
+  <a class="skip" href="#editor">Skip to the pattern</a>
+  <p id="bootError" class="banner" hidden>The metronome didn’t start. Reload the page.</p>
+  <p id="storageWarning" class="banner" hidden>Presets can’t be stored in this browser. They will last only until you close the tab.</p>
+
+  <div class="app">
+    <section class="stage-column" aria-label="Playback">
+      <header class="top">
+        <div>
+          <p class="brand">Metronome</p>
+          <p class="brand-sub">Piano practice</p>
+        </div>
+      </header>
+
+      <div class="stage">
+        <div id="strip" class="strip"></div>
+        <p class="kicker">Bar <span id="barNum">1</span> · <span id="sigLabel">4/4</span></p>
+        <p id="beatNum" class="beat-num is-downbeat" aria-hidden="true">1</p>
+        <div id="lamps" class="lamps" role="img" aria-label="Beats in the current bar"></div>
+        <div id="subs" class="subs" aria-hidden="true"></div>
+        <p id="subLabel" class="sub-label">Quarter-note triplet</p>
+        <button type="button" id="bpmBtn" class="bpm">
+          <span id="bpm">80</span>
+          <span class="bpm-unit">BPM</span>
+        </button>
+        <p id="playState" class="play-state">Ready</p>
+      </div>
+
+      <div class="transport">
+        <button type="button" id="toggle" class="start" aria-pressed="false">Start</button>
+        <div class="control-row">
+          <div class="tempo-box">
+            <span class="control-label" id="tempoLabel">Tempo</span>
+            <div class="stepper">
+              <button type="button" id="tempoDec" aria-label="Slower">−</button>
+              <input id="tempo" type="number" inputmode="numeric" min="20" max="300" step="1" value="80" aria-labelledby="tempoLabel">
+              <button type="button" id="tempoInc" aria-label="Faster">+</button>
+            </div>
+          </div>
+          <button type="button" id="tap" class="tap">Tap</button>
+        </div>
+        <p id="tapStatus" class="hint-line" aria-live="polite"></p>
+        <div class="volume-box">
+          <div class="volume-top">
+            <label for="volume">Volume</label>
+            <span id="volLabel">70%</span>
+          </div>
+          <input id="volume" type="range" min="0" max="100" value="70" aria-valuemin="0" aria-valuemax="100" aria-valuenow="70" aria-label="Volume">
+        </div>
+        <p id="wakeNote" class="hint-line"></p>
+        <p id="message" class="hint-line message" role="status"></p>
+      </div>
+    </section>
+
+    <section class="editor-column" id="editor" aria-label="Pattern and presets">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Loop</h2>
+          <button type="button" id="newStraight" class="text-btn">New straight 4/4</button>
+        </div>
+        <p class="hint-line">Tap a beat to cycle quarters, eighths, triplets, and sixteenths. “Triplet across 2 beats” is the quarter-note triplet on beats 1–2 of the default loop. Tap a paired triplet to split it. Tap the dots to cycle accent, normal, and soft.</p>
+        <div id="sigChips" class="chips" role="group" aria-label="Time signature"></div>
+        <div class="meter-row">
+          <div class="meter-step">
+            <span class="control-label" id="beatsLabel">Beats per bar</span>
+            <div class="stepper">
+              <button type="button" id="beatsDec" aria-label="Fewer beats per bar">−</button>
+              <span id="beatsValue" aria-labelledby="beatsLabel">4</span>
+              <button type="button" id="beatsInc" aria-label="More beats per bar">+</button>
+            </div>
+          </div>
+          <div class="unit-toggle" role="group" aria-label="Beat value">
+            <button type="button" id="unit4" aria-pressed="true">/4</button>
+            <button type="button" id="unit8" aria-pressed="false">/8</button>
+          </div>
+          <div class="meter-step">
+            <span class="control-label" id="barsLabel">Bars in the loop</span>
+            <div class="stepper">
+              <button type="button" id="barsDec" aria-label="Fewer bars">−</button>
+              <span id="barsValue" aria-labelledby="barsLabel">4</span>
+              <button type="button" id="barsInc" aria-label="More bars">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="legend">
+          <span><i class="dot is-accent"></i> Accent</span>
+          <span><i class="dot is-normal"></i> Normal</span>
+          <span><i class="dot is-soft"></i> Soft</span>
+        </div>
+        <div id="pattern"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Presets</h2>
+        <p class="hint-line">Saved on this device. The quarter-triplet loop is built in and always here.</p>
+        <p id="dirtyLabel" class="hint-line"></p>
+        <label class="control-label" for="presetName">Name</label>
+        <input id="presetName" type="text" maxlength="48" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done" value="Quarter-triplet loop">
+        <div class="preset-actions">
+          <button type="button" id="saveBtn">Save a copy</button>
+          <button type="button" id="saveAsBtn">Save as new</button>
+          <button type="button" id="renameBtn">Rename</button>
+          <button type="button" id="deleteBtn">Delete</button>
+        </div>
+        <div id="presetList" class="preset-list"></div>
+      </section>
+
+      <footer class="foot">
+        <p id="offline" class="hint-line"></p>
+        <p id="installHint" class="hint-line"></p>
+        <p class="hint-line">Space starts and stops. Arrow keys change the tempo.</p>
+      </footer>
+    </section>
+  </div>
+
+  <div id="live" class="sr-only" aria-live="polite"></div>
+  <noscript><p class="banner">This metronome needs JavaScript for the audio clock.</p></noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
